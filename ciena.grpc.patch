@@ -1,0 +1,286 @@
+--- grpc/third_party/boringssl/crypto/chacha/chacha_vec.c	2017-06-01 11:15:25.570690434 -0400
++++ grpc/third_party/boringssl/crypto/chacha/chacha_vec.c	2017-01-12 03:38:36.000000000 -0500
+@@ -23,6 +23,8 @@
+  * marked as public domain. It was been altered to allow for non-aligned inputs
+  * and to allow the block counter to be passed in specifically. */
+ 
++//CIENA note - stdalign.h  supported from C11
++
+ #include <openssl/chacha.h>
+ 
+ #include "../internal.h"
+@@ -166,10 +168,10 @@
+ 	const unsigned *kp = (const unsigned *)key;
+ #if defined(__ARM_NEON__)
+ 	uint32_t np[3];
+-	alignas(16) uint8_t alignment_buffer[16];
++	/*alignas(16)*/ uint8_t alignment_buffer[16];
+ #endif
+ 	vec s0, s1, s2, s3;
+-	alignas(16) unsigned chacha_const[] =
++	/*alignas(16)*/ unsigned chacha_const[] =
+ 		{0x61707865,0x3320646E,0x79622D32,0x6B206574};
+ #if defined(__ARM_NEON__)
+ 	memcpy(np, nonce, 12);
+@@ -291,7 +293,7 @@
+ 	inlen = inlen % 64;
+ 	if (inlen)
+ 		{
+-		alignas(16) vec buf[4];
++		/*alignas(16)*/ vec buf[4];
+ 		vec v0,v1,v2,v3;
+ 		v0 = s0; v1 = s1; v2 = s2; v3 = s3;
+ 		for (i = CHACHA_RNDS/2; i; i--)
+--- grpc/third_party/boringssl/crypto/cipher/e_chacha20poly1305.c	2017-06-01 11:15:25.571690427 -0400
++++ grpc/third_party/boringssl/crypto/cipher/e_chacha20poly1305.c	2017-01-12 03:41:05.000000000 -0500
+@@ -12,6 +12,8 @@
+  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+ 
++/*CIENA Note - C11 feature stdalign.h not supported*/
++
+ #include <openssl/aead.h>
+ 
+ #include <string.h>
+@@ -93,7 +95,7 @@
+                           const uint8_t nonce[12], const uint8_t *ad,
+                           size_t ad_len, const uint8_t *ciphertext,
+                           size_t ciphertext_len) {
+-  alignas(16) uint8_t poly1305_key[32];
++  /*alignas(16)*/ uint8_t poly1305_key[32];
+   memset(poly1305_key, 0, sizeof(poly1305_key));
+   CRYPTO_chacha_20(poly1305_key, poly1305_key, sizeof(poly1305_key),
+                    c20_ctx->key, nonce, 0);
+@@ -134,7 +136,7 @@
+ 
+   CRYPTO_chacha_20(out, in, in_len, c20_ctx->key, nonce, 1);
+ 
+-  alignas(16) uint8_t tag[POLY1305_TAG_LEN];
++  /*alignas(16)*/ uint8_t tag[POLY1305_TAG_LEN];
+   aead_poly1305(poly1305_update, tag, c20_ctx, nonce, ad, ad_len, out, in_len);
+ 
+   memcpy(out + in_len, tag, c20_ctx->tag_len);
+@@ -168,7 +170,7 @@
+   }
+ 
+   plaintext_len = in_len - c20_ctx->tag_len;
+-  alignas(16) uint8_t tag[POLY1305_TAG_LEN];
++  /*alignas(16)*/ uint8_t tag[POLY1305_TAG_LEN];
+   aead_poly1305(poly1305_update, tag, c20_ctx, nonce, ad, ad_len, in,
+                 plaintext_len);
+   if (CRYPTO_memcmp(tag, in + plaintext_len, c20_ctx->tag_len) != 0) {
+--- grpc/src/core/lib/security/transport/handshake.c	2017-06-01 11:15:17.031747934 -0400
++++ grpc/src/core/lib/security/transport/handshake.c	2017-02-06 11:16:09.000000000 -0500
+@@ -357,8 +357,11 @@
+     gpr_mu_unlock(&server_connector->mu);
+   }
+   send_handshake_bytes_to_peer(exec_ctx, h);
++  /*CIENA_START*//*CIENA_END*/
++  deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_seconds(120, GPR_TIMESPAN));
+   grpc_timer_init(exec_ctx, &h->timer, deadline, on_timeout, h,
+                   gpr_now(deadline.clock_type));
++
+ }
+ 
+ void grpc_security_handshake_shutdown(grpc_exec_ctx *exec_ctx,
+--- grpc/third_party/boringssl/crypto/internal.h	2017-06-01 11:15:25.606690190 -0400
++++ grpc/third_party/boringssl/crypto/internal.h	2017-01-12 03:18:40.000000000 -0500
+@@ -118,7 +118,7 @@
+ #define alignof __alignof
+ #endif
+ #else
+-#include <stdalign.h>
++//#include <stdalign.h>  CIENA
+ #endif
+ 
+ #if defined(OPENSSL_NO_THREADS)
+--- grpc/third_party/boringssl/crypto/poly1305/poly1305_vec.c	2017-06-01 11:15:25.614690137 -0400
++++ grpc/third_party/boringssl/crypto/poly1305/poly1305_vec.c	2017-01-12 04:05:40.000000000 -0500
+@@ -18,6 +18,8 @@
+  * http://cr.yp.to/papers.html#neoncrypto. Unrolled to 2 powers, i.e. 64 byte
+  * block size */
+ 
++/*CIENA Note - C11 stuff alignas not supported ,  union/struct declaration without name is not supported */
++
+ #include <openssl/poly1305.h>
+ 
+ #include "../internal.h"
+@@ -33,10 +35,10 @@
+ 
+ typedef __m128i xmmi;
+ 
+-static const alignas(16) uint32_t poly1305_x64_sse2_message_mask[4] = {
++static const /*alignas(16)*/ uint32_t poly1305_x64_sse2_message_mask[4] = {
+     (1 << 26) - 1, 0, (1 << 26) - 1, 0};
+-static const alignas(16) uint32_t poly1305_x64_sse2_5[4] = {5, 0, 5, 0};
+-static const alignas(16) uint32_t poly1305_x64_sse2_1shl128[4] = {
++static const /*alignas(16)*/ uint32_t poly1305_x64_sse2_5[4] = {5, 0, 5, 0};
++static const /*alignas(16)*/ uint32_t poly1305_x64_sse2_1shl128[4] = {
+     (1 << 24), 0, (1 << 24), 0};
+ 
+ static inline uint128_t add128(uint128_t a, uint128_t b) { return a + b; }
+@@ -71,7 +73,7 @@
+   union {
+     xmmi H[5]; /*  80 bytes  */
+     uint64_t HH[10];
+-  };
++  }HorHH;/* CIENA Note - union/struct declaration without name is not supported */
+   /* uint64_t r0,r1,r2;       [24 bytes] */
+   /* uint64_t pad0,pad1;      [16 bytes] */
+   uint64_t started;        /*   8 bytes  */
+@@ -172,11 +174,11 @@
+   p->R24.d[3] = U8TO32_LE(key + 28);
+ 
+   /* H = 0 */
+-  st->H[0] = _mm_setzero_si128();
+-  st->H[1] = _mm_setzero_si128();
+-  st->H[2] = _mm_setzero_si128();
+-  st->H[3] = _mm_setzero_si128();
+-  st->H[4] = _mm_setzero_si128();
++  st->HorHH.H[0] = _mm_setzero_si128();
++  st->HorHH.H[1] = _mm_setzero_si128();
++  st->HorHH.H[2] = _mm_setzero_si128();
++  st->HorHH.H[3] = _mm_setzero_si128();
++  st->HorHH.H[4] = _mm_setzero_si128();
+ 
+   st->started = 0;
+   st->leftover = 0;
+@@ -267,12 +269,12 @@
+                           _mm_loadl_epi64((const xmmi *)(m + 16)));
+   T6 = _mm_unpacklo_epi64(_mm_loadl_epi64((const xmmi *)(m + 8)),
+                           _mm_loadl_epi64((const xmmi *)(m + 24)));
+-  st->H[0] = _mm_and_si128(MMASK, T5);
+-  st->H[1] = _mm_and_si128(MMASK, _mm_srli_epi64(T5, 26));
++  st->HorHH.H[0] = _mm_and_si128(MMASK, T5);
++  st->HorHH.H[1] = _mm_and_si128(MMASK, _mm_srli_epi64(T5, 26));
+   T5 = _mm_or_si128(_mm_srli_epi64(T5, 52), _mm_slli_epi64(T6, 12));
+-  st->H[2] = _mm_and_si128(MMASK, T5);
+-  st->H[3] = _mm_and_si128(MMASK, _mm_srli_epi64(T5, 26));
+-  st->H[4] = _mm_or_si128(_mm_srli_epi64(T6, 40), HIBIT);
++  st->HorHH.H[2] = _mm_and_si128(MMASK, T5);
++  st->HorHH.H[3] = _mm_and_si128(MMASK, _mm_srli_epi64(T5, 26));
++  st->HorHH.H[4] = _mm_or_si128(_mm_srli_epi64(T6, 40), HIBIT);
+ }
+ 
+ static void poly1305_blocks(poly1305_state_internal *st, const uint8_t *m,
+@@ -287,11 +289,11 @@
+   xmmi M0, M1, M2, M3, M4;
+   xmmi C1, C2;
+ 
+-  H0 = st->H[0];
+-  H1 = st->H[1];
+-  H2 = st->H[2];
+-  H3 = st->H[3];
+-  H4 = st->H[4];
++  H0 = st->HorHH.H[0];
++  H1 = st->HorHH.H[1];
++  H2 = st->HorHH.H[2];
++  H3 = st->HorHH.H[3];
++  H4 = st->HorHH.H[4];
+ 
+   while (bytes >= 64) {
+     /* H *= [r^4,r^4] */
+@@ -458,11 +460,11 @@
+     bytes -= 64;
+   }
+ 
+-  st->H[0] = H0;
+-  st->H[1] = H1;
+-  st->H[2] = H2;
+-  st->H[3] = H3;
+-  st->H[4] = H4;
++  st->HorHH.H[0] = H0;
++  st->HorHH.H[1] = H1;
++  st->HorHH.H[2] = H2;
++  st->HorHH.H[3] = H3;
++  st->HorHH.H[4] = H4;
+ }
+ 
+ static size_t poly1305_combine(poly1305_state_internal *st, const uint8_t *m,
+@@ -482,11 +484,11 @@
+   uint64_t c;
+   size_t consumed = 0;
+ 
+-  H0 = st->H[0];
+-  H1 = st->H[1];
+-  H2 = st->H[2];
+-  H3 = st->H[3];
+-  H4 = st->H[4];
++  H0 = st->HorHH.H[0];
++  H1 = st->HorHH.H[1];
++  H2 = st->HorHH.H[2];
++  H3 = st->HorHH.H[3];
++  H4 = st->HorHH.H[4];
+ 
+   /* p = [r^2,r^2] */
+   p = &st->P[1];
+@@ -701,9 +703,9 @@
+   t0 &= 0x3ffffff;
+   t1 = t1 + c;
+ 
+-  st->HH[0] = ((t0) | (t1 << 26)) & 0xfffffffffffull;
+-  st->HH[1] = ((t1 >> 18) | (t2 << 8) | (t3 << 34)) & 0xfffffffffffull;
+-  st->HH[2] = ((t3 >> 10) | (t4 << 16)) & 0x3ffffffffffull;
++  st->HorHH.HH[0] = ((t0) | (t1 << 26)) & 0xfffffffffffull;
++  st->HorHH.HH[1] = ((t1 >> 18) | (t2 << 8) | (t3 << 34)) & 0xfffffffffffull;
++  st->HorHH.HH[2] = ((t3 >> 10) | (t4 << 16)) & 0x3ffffffffffull;
+ 
+   return consumed;
+ }
+@@ -780,9 +782,9 @@
+   }
+ 
+   /* st->HH will either be 0 or have the combined result */
+-  h0 = st->HH[0];
+-  h1 = st->HH[1];
+-  h2 = st->HH[2];
++  h0 = st->HorHH.HH[0];
++  h1 = st->HorHH.HH[1];
++  h2 = st->HorHH.HH[2];
+ 
+   p = &st->P[1];
+   r0 = ((uint64_t)p->R20.d[3] << 32) | (uint64_t)p->R20.d[1];
+--- grpc/src/core/ext/transport/chttp2/server/insecure/server_chttp2.c	2017-06-01 11:15:17.012748062 -0400
++++ grpc/src/core/ext/transport/chttp2/server/insecure/server_chttp2.c	2017-01-12 04:08:46.000000000 -0500
+@@ -87,6 +87,8 @@
+   int port_temp;
+   grpc_exec_ctx exec_ctx = GRPC_EXEC_CTX_INIT;
+   grpc_error *err = GRPC_ERROR_NONE;
++  size_t naddrs = 0;/*CIENA Note - unitialized not allowed*/
++
+ 
+   GRPC_API_TRACE("grpc_server_add_insecure_http2_port(server=%p, addr=%s)", 2,
+                  (server, addr));
+@@ -103,7 +105,8 @@
+     goto error;
+   }
+ 
+-  const size_t naddrs = resolved->naddrs;
++  //const size_t naddrs = resolved->naddrs;  -Ciena 
++  naddrs = resolved->naddrs;
+   errors = gpr_malloc(sizeof(*errors) * naddrs);
+   for (i = 0; i < naddrs; i++) {
+     errors[i] = grpc_tcp_server_add_port(
+--- grpc/third_party/boringssl/include/openssl/sha.h	2017-06-01 11:15:25.659689835 -0400
++++ grpc/third_party/boringssl/include/openssl/sha.h	2017-01-12 03:50:34.000000000 -0500
+@@ -103,16 +103,16 @@
+ #else
+   /* wpa_supplicant accesses |h0|..|h4| so we must support those names
+    * for compatibility with it until it can be updated. */
+-  union {
++  /*union {*/
+     uint32_t h[5];
+-    struct {
++  /*  struct {
+       uint32_t h0;
+       uint32_t h1;
+       uint32_t h2;
+       uint32_t h3;
+       uint32_t h4;
+-    };
+-  };
++    } struct1; //CIENA - struct /union without name is not allowed.
++  } union1;*/
+ #endif
+   uint32_t Nl, Nh;
+   uint8_t data[SHA_CBLOCK];
