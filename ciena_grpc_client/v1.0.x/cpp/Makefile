@@ -50,7 +50,7 @@ vpath %.proto $(PROTOS_PATH)
 all: system-check gnmi_client
 
 gnmi_client: any.pb.o any.grpc.pb.o gNMI.pb.o gNMI.grpc.pb.o gnmi_client.o
-	-rm ./../../../grpc/libs/opt/*.so.* &>/dev/null
+	-rm ./../../../grpc/libs/opt/*.so* &>/dev/null
 	$(CXX) -lstdc++ $(CPPFLAGS) $^ $(LDFLAGS) -o $@
 
 .PRECIOUS: %.grpc.pb.cc

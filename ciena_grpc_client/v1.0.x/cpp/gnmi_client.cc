@@ -1,20 +1,20 @@
-/*************************************************************************************/
-/* File: ocfg_client.cc
-/*
-/* Description: Implements client based on gNMI.proto
-/*               => Subscribe Request (to get streaming data) against user inputted prefix/path
-/*               => Async Get Request against user inputted prefix/path
-/*
-/* Copyright 2016 Ciena. All Rights Reserved.
-/*
-/* CONFIDENTIALITY AND LIMITED USE
-/*
-/* This software, including any software of third parties embodied herein,
-/* contains information and concepts which are confidential to Ciena
-/* and such third parties. This software is licensed for use
-/* solely in accordance with the terms and conditions of the applicable
-/* license agreement with Ciena or its authorized distributor.
-/*************************************************************************************/
+/*************************************************************************************
+ * File: gnmi_client.cc
+ *
+ * Description: Implements client based on gNMI.proto
+ *               => Subscribe Request (to get streaming data) against user inputted prefix/path
+ *               => Async Get Request against user inputted prefix/path
+ *
+ * Copyright 2016 Ciena. All Rights Reserved.
+ *
+ * CONFIDENTIALITY AND LIMITED USE
+ *
+ * This software, including any software of third parties embodied herein,
+ * contains information and concepts which are confidential to Ciena
+ * and such third parties. This software is licensed for use
+ * solely in accordance with the terms and conditions of the applicable
+ * license agreement with Ciena or its authorized distributor.
+ *************************************************************************************/
 
 
 #include <iostream>
@@ -25,8 +25,8 @@
 #include <pwd.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <sys/types.h>
-
 #include <grpc/grpc.h>
 #include <grpc/support/log.h>
 #include <grpc++/channel.h>
@@ -91,7 +91,6 @@ using gnmi::SubscribeResponse;
 
 
 
-void* tag(int i) { return (void*)i; }
 #define STREAM_SERVER_PORT "10161"
 #define ASYNC_SERVER_PORT  "10161"
 #define SLASH_CHAR         '/'
@@ -218,9 +217,9 @@ static  void usage( )
     printf (" -x <prefix>              : Prefix\n");
     printf (" -p <path>                : Path for Sync/Async Get rpc\n");
     printf (" -d <path>                : Delete Path for Async Set request (NOT SUPPORTED)\n");        
-    printf (" -r <path>:<value>        : Replace Path for Async Set reuqest (NOT SUPPORTED)\n");
-    printf (" -u <path>:<value>        : Update Path for Async Set reuest\n\n");
-    printf (" -K <file path>           : User key file\n\n");    
+    printf (" -r <path>:<value>        : Replace Path for Async Set request (NOT SUPPORTED)\n");
+    printf (" -u <path>:<value>        : Update Path for Async Set request\n");
+    printf (" -K <file path>           : User key file\n");
     printf (" -C <file path>           : User certificate file\n\n");    
 
     printf ("Note:\n");
