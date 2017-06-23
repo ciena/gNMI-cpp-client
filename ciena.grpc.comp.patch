@@ -69,20 +69,6 @@
    aead_poly1305(poly1305_update, tag, c20_ctx, nonce, ad, ad_len, in,
                  plaintext_len);
    if (CRYPTO_memcmp(tag, in + plaintext_len, c20_ctx->tag_len) != 0) {
---- grpc/src/core/lib/security/transport/handshake.c	2017-06-01 11:15:17.031747934 -0400
-+++ grpc/src/core/lib/security/transport/handshake.c	2017-02-06 11:16:09.000000000 -0500
-@@ -357,8 +357,11 @@
-     gpr_mu_unlock(&server_connector->mu);
-   }
-   send_handshake_bytes_to_peer(exec_ctx, h);
-+  /*CIENA_START*//*CIENA_END*/
-+  deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_seconds(120, GPR_TIMESPAN));
-   grpc_timer_init(exec_ctx, &h->timer, deadline, on_timeout, h,
-                   gpr_now(deadline.clock_type));
-+
- }
- 
- void grpc_security_handshake_shutdown(grpc_exec_ctx *exec_ctx,
 --- grpc/third_party/boringssl/crypto/internal.h	2017-06-01 11:15:25.606690190 -0400
 +++ grpc/third_party/boringssl/crypto/internal.h	2017-01-12 03:18:40.000000000 -0500
 @@ -118,7 +118,7 @@

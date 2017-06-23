@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
+
 #include <grpc/grpc.h>
 #include <grpc/support/log.h>
 #include <grpc++/channel.h>
@@ -100,6 +101,7 @@ char  usrNamPasswdStr[200];
 char *userid, *password; 
 int requestInLoop = 0;
 int cmdDelay = 0;
+int64_t timeout_value=10; // in seconds
 
 
 /*Shall we increase the max size for key & cert chain ?*/
@@ -113,7 +115,6 @@ void  get_client_credentials(char* clientKey, char* clientCert){
  FILE *fp_key  = fopen(clientKey, "rb");
  FILE *fp_cert = fopen(clientCert, "rb");
  if (fp_key == NULL || fp_cert == NULL) {
-     printf("Environmen Vars CLIENT_KEY and CLIENT_CERT not set\n");
     return;
  }
 
@@ -134,69 +135,7 @@ void  get_client_credentials(char* clientKey, char* clientCert){
  fclose(fp_cert);
  client_cert[fsize] = 0;
 
- /* Add them as debug logs*/
- //gpr_log(GPR_DEBUG,"\n\rCLIENT PRIVATE KEY :\n\r %s\n", client_key);
- //gpr_log(GPR_DEBUG,"\n\rCLIENT CERTIFIACTE : \n\r%s\n", client_cert);
-
 }
-
-
-/*
-char *client_key = gpr_getenv("CLIENT_KEY");
-char *client_cert = gpr_getenv("CLIENT_CERT");
-*/
-
-/*
-static const char client_key[] = 
-"-----BEGIN RSA PRIVATE KEY-----\n"
-"MIICXQIBAAKBgQDHvmhxkz8umMewH05wSFh3i1r8ZhvA6gbC3qljkQgRHHVh2LF0\n"
-"7oGlIPlqkGpfhPsxs/JVLQnQxQXqPSRLYF0iREHmRcEwHUlHrjVuVgbDMJ6+n45d\n"
-"75gple4rkd9xweOvNeJv1Se6R8HQgcNZkKmfJsoAqUJoG4N1l8887MiNDwIDAQAB\n"
-"AoGBALcBWFX+z9uUdRiDhm1Pi2Zz0nf/4Zu9j1ZJhS7JOXfb+Bwe2m/E+hld/cbJ\n"
-"6/v6Ld+a/ANYEW8qpMG5JSC+eHSHNX7oAr8fcW5rNukFZnOowb3DTwq3xLjv7UEd\n"
-"NmI1RuuT8wCetJ90PzyNReIcrMJhkjPMDHLP0DMYoQCRHlCxAkEA6eFiHW5ddS4Y\n"
-"XGu+DYMS+slEDHDPilrZ7iZ85lfCP2PC7oh2P2EJqOBRIcwn/GqhoBSjT6WQDWKR\n"
-"YHa0j+hD9wJBANqihdS1uNT/hz8bsgerVpzTJysP4y8TEwAhjUJu8ngP6wEmphyi\n"
-"BObEvcbvX3FvdQwA2iC/7tNEWMwW3apwCakCQEu7HE8VXpPEAkVi6d5sM+ga5br1\n"
-"iG5vbqPLuKPJhO+LuSIN8+Qf4sXZJMxB1CzKxl0UcbEnlhaPdS18Iol6lw8CQQDX\n"
-"Vr3j/Lw4phlqkfeuUBa1zc9FPZewlOPg/CrqpOYSVPNNJej0SKv1MxAMMVZbHsE0\n"
-"+l3dZc1vrmCbW2YmacVJAkBMJZ2+gsEp77NfXgkHpQU16X9PGNgG+Ng4rt8VMOFM\n"
-"/kJ5uPS0Qmn6qUFMYVozNPXkcfMtXvtsme6287fNs50Y\n"
-"-----END RSA PRIVATE KEY-----\n";
-
-static const char client_cert[] = 
-"-----BEGIN CERTIFICATE-----\n"
-"MIIEdjCCA9+gAwIBAgICEAAwDQYJKoZIhvcNAQEFBQAwga0xCzAJBgNVBAYTAk5a\n"
-"MRUwEwYDVQQIDAxTb3V0aCBJc2xhbmQxEzARBgNVBAcMCldlbGxpbmd0b24xETAP\n"
-"BgNVBAoMCFlveW9keW5lMRswGQYDVQQLDBJQcm9wdWxzaW9uIFN5c3RlbXMxIDAe\n"
-"BgNVBAMMF3Byb3B1bHNpb24ueW95b2R5bmUuY29tMSAwHgYJKoZIhvcNAQkBFhFq\n"
-"b2huQHlveW9keW5lLmNvbTAiGA8yMDE1MTIyMjAzNTkxMloYDzIwMTkxMjIyMDM1\n"
-"OTExWjBsMQ8wDQYDVQQDDAZzaGlraGExDjAMBgNVBAgMBURFTEhJMQswCQYDVQQG\n"
-"EwJJTjEfMB0GCSqGSIb3DQEJARYQc2hpa2hhQGNpZW5hLmNvbTEOMAwGA1UECgwF\n"
-"Q0lFTkExCzAJBgNVBAsMAklUMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDH\n"
-"vmhxkz8umMewH05wSFh3i1r8ZhvA6gbC3qljkQgRHHVh2LF07oGlIPlqkGpfhPsx\n"
-"s/JVLQnQxQXqPSRLYF0iREHmRcEwHUlHrjVuVgbDMJ6+n45d75gple4rkd9xweOv\n"
-"NeJv1Se6R8HQgcNZkKmfJsoAqUJoG4N1l8887MiNDwIDAQABo4IB3zCCAdswDAYD\n"
-"VR0TAQH/BAIwADAdBgNVHQ4EFgQUzVkuZKkcrYu02OcPIJtapyw+MRAwHwYDVR0j\n"
-"BBgwFoAU5aNADwLLt2S3eeNOUoJRBPV2GV0wCwYDVR0PBAQDAgWgMBMGA1UdJQQM\n"
-"MAoGCCsGAQUFBwMBMH4GA1UdHwR3MHUwO6A5oDeGNWh0dHA6Ly9wa2kuc3Bhcmts\n"
-"aW5nY2EuY29tL1NwYXJrbGluZ0ludGVybWlkaWF0ZTEuY3JsMDagNKAyhjBodHRw\n"
-"Oi8vcGtpLmJhY2t1cC5jb20vU3BhcmtsaW5nSW50ZXJtaWRpYXRlMS5jcmwwgegG\n"
-"CCsGAQUFBwEBBIHbMIHYMEEGCCsGAQUFBzAChjVodHRwOi8vcGtpLnNwYXJrbGlu\n"
-"Z2NhLmNvbS9TcGFya2xpbmdJbnRlcm1lZGlhdGUxLmNydDA8BggrBgEFBQcwAoYw\n"
-"aHR0cDovL3BraS5iYWNrdXAuY29tL1NwYXJrbGluZ0ludGVybWVkaWF0ZTEuY3J0\n"
-"MCwGCCsGAQUFBzABhiBodHRwOi8vcGtpLnNwYXJrbGluZ2NhLmNvbS9vY3NwLzAn\n"
-"BggrBgEFBQcwAYYbaHR0cDovL3BraS5iYWNrdXAuY29tL29jc3AvMA0GCSqGSIb3\n"
-"DQEBBQUAA4GBAHkftadBeJ8BSD1iYZie3hSXm+T6CDb90pAeioeput3Q7SOddpSi\n"
-"RP2tXyb2hE9JcHlEDcA3eJSaUK/gTFiRCX7TCoUUrLmMiWo+zJ0MQB/7sqnCrs7O\n"
-"QCX4xdHHSxyq6gyzCJitmPvPuxISTWp4VQLuC6WG46ahlTpeAw/Nv0J5\n"
-"-----END CERTIFICATE-----\n";
-*/
-
-
-
-
-
 
 static  void usage( )
 {
@@ -211,7 +150,6 @@ static  void usage( )
     printf (" -i <hostIpAddr>          : IP of 6500 box where gRPC server is running.\n");
     printf (" -w <dcnPort>             : DCN port; which is optional, default DCN port is 10161\n");
     printf (" -h <httpPort>            : httpPort; which is optional, default http port is 443\n");
-    printf (" -c <delay>               : Send Async Get request in loop against given delay\n");    
     printf (" -m <mode>                : 0 => STREAM, 1=> ONCE\n");
     printf (" -g <sample_interval>     : Multiple of 10 secs\n");    
     printf (" -x <prefix>              : Prefix\n");
@@ -219,8 +157,15 @@ static  void usage( )
     printf (" -d <path>                : Delete Path for Async Set request (NOT SUPPORTED)\n");        
     printf (" -r <path>:<value>        : Replace Path for Async Set request (NOT SUPPORTED)\n");
     printf (" -u <path>:<value>        : Update Path for Async Set request\n");
+    printf (" -c <delay>               : Send Async Get request in loop against given delay\n");
+    printf (" -S <max-msg-size>        : Channel max message size value in MB (default value is 20MB)\n");
+    printf ("                            If received msg size > 20MB then client will exit with\n");
+    printf ("                            rpc ststus code 13 => INTERNAL\n");
+    printf (" -T <timeout>             : SSL handshake timeout(minval needed is 4 sec; default value is 10s)\n");
+    printf ("                            If tiemout is not enough then client will exit with Security handshake failed\n");
+    printf ("                            and returned rpc status code will be 14 => UNAVAILABLE\n");
     printf (" -K <file path>           : User key file\n");
-    printf (" -C <file path>           : User certificate file\n\n");    
+    printf (" -C <file path>           : User certificate file\n\n");
 
     printf ("Note:\n");
     printf ("  RPC Error codes:\n");
@@ -232,7 +177,7 @@ static  void usage( )
     printf ("                             to clear the entry & try again.\n");    
     printf ("   10 => ABORTED           : Session killed at server\n");    
     printf ("   12 => UNIMPLEMENTED     : RPC not implemented\n");    
-    printf ("   13 => INTERNAL          : Something is wrong or broken on server\n");
+    printf ("   13 => INTERNAL          : Something is wrong or broken on server/client\n");
     printf ("   14 => UNAVAILABLE       : Data not available/Invalid path/Login server times out\n");    
     printf ("   16 => UNAUTHENTICATED   : Login credentials not OK\n");
     printf ("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
@@ -269,23 +214,24 @@ static const char *getUserName()
 
   return "";
 }
+
 static void downloadCertAndSetEnv(char* hostIpStr, char* portStr, char* httpPortStr)
 {
-#ifdef GRPC_SECURE 
+#ifdef GRPC_SECURE
     char setSecBuff[200];
-    struct stat fileStat;
-
-    sprintf(setSecBuff, "/home/%s/roots.pem_%s_%s_%s", getUserName(),hostIpStr,portStr,httpPortStr);
-    if(stat(setSecBuff,&fileStat) < 0)
-    { /* if certificate not pesent */
-        sprintf(setSecBuff, 
-        "echo -n | openssl s_client -connect %s:%s | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /home/%s/roots.pem_%s_%s_%s",
-                hostIpStr,httpPortStr, getUserName(),hostIpStr,portStr,httpPortStr);
-        system(setSecBuff);
+    pid_t pid = getpid();
+    
+    { /* Get root certificate */
+      sprintf(setSecBuff, "echo -n | openssl s_client -connect %s:%s  &> /home/%s/roots.pem.temp_%d",
+                                       hostIpStr,httpPortStr, getUserName(), pid);
+      system(setSecBuff);
+      sprintf(setSecBuff, "cat /home/%s/roots.pem.temp_%d | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > /home/%s/roots.pem_%d",
+                           getUserName(), pid, getUserName(), pid);
+      system(setSecBuff);
     }
-    sprintf(setSecBuff, "/home/%s/roots.pem_%s_%s_%s", getUserName(),hostIpStr,portStr,httpPortStr);
+    sprintf(setSecBuff, "/home/%s/roots.pem_%d", getUserName(),pid);
     setenv("GRPC_DEFAULT_SSL_ROOTS_FILE_PATH", setSecBuff, true);
-    sprintf(setSecBuff, "chmod 744 /home/%s/roots.pem_%s_%s_%s", getUserName(),hostIpStr,portStr,httpPortStr);
+    sprintf(setSecBuff, "chmod 744 /home/%s/roots.pem_%d", getUserName(),pid);
     system(setSecBuff);
 #endif
 }
@@ -364,7 +310,7 @@ class TelemAsyncClient {
     
     //GPR_ASSERT(ok);
     GPR_ASSERT(got_tag == (void*)1);
-    if (status.ok()) 
+    if(status.ok() || status.error_code() == 5) 
     {
         printGetResponse(&reply);
     } 
@@ -1282,8 +1228,8 @@ int main(int argc, char** argv) {
     char ipStr[20];
     char httpPortStr[10];
     char portStr[10];
-    char clientKey[100];
-    char clientCert[100];    
+    char clientKey[200];
+    char clientCert[200];    
     int  prefixPresent = 0;
     int  updatePresent = 0;    
     int  pathPresent = 0;    
@@ -1295,6 +1241,8 @@ int main(int argc, char** argv) {
     char* portPos2 = NULL;   
     int   mode = 0;
     int   sampleInterval = 10;
+    char  rmRootCertBuff[100];
+    int   channelMaxMsgSize = 20;
     
     GetRequest       getReq;
     SetRequest       setReq;    
@@ -1306,6 +1254,7 @@ int main(int argc, char** argv) {
     memset(portStr,0,10);
     strcpy(portStr, STREAM_SERVER_PORT);
 
+    sprintf(rmRootCertBuff, "rm -f /home/%s/roots.pem*", getUserName(),getpid());
     
     ::gnmi::SubscriptionList   *subscribe = new ::gnmi::SubscriptionList();    
 
@@ -1317,7 +1266,7 @@ int main(int argc, char** argv) {
       cmd_ptr = cmd_ptr + 2;
     }
     
-    while((opt=getopt(argc, argv, "t:sl:i:x:p:d:r:u:c:w:h:m:g:K:C:")) != -1)
+    while((opt=getopt(argc, argv, "t:sl:i:x:p:d:r:u:c:w:h:m:g:K:C:S:T:")) != -1)
     {
         switch(opt) 
         {
@@ -1333,7 +1282,7 @@ int main(int argc, char** argv) {
             case 'c':  // request in loop with given delay
                 cmdDelay = atoi(optarg);
                 
-                if( cmdDelay <= 0 || cmdDelay > 10)
+                if( cmdDelay < 0 || cmdDelay > 10)
                 {
                     printf("\n\nValid delay range [0 > <delay> < 10 ]!!! \n\n");
                     usage();
@@ -1631,6 +1580,28 @@ int main(int argc, char** argv) {
                 break;
             }
             
+            case 'S' :
+            {
+                channelMaxMsgSize = atoi(optarg);
+                if( channelMaxMsgSize <= 0  || channelMaxMsgSize > 100)
+                {
+                    printf("\n\n Invalid max message size %d!!! \n\n", channelMaxMsgSize);
+                    usage();
+                }
+                break;
+            }
+            
+            case 'T' :
+            {
+                timeout_value  = atoi(optarg);
+                if(timeout_value <= 0)
+                {
+                    printf("\n\n Invalid timeout_value %d!!! \n\n", timeout_value);
+                    usage();
+                }
+                break;
+            }
+            
             default:
                 usage();
         }
@@ -1641,6 +1612,7 @@ int main(int argc, char** argv) {
     ChannelArguments      args;
     
     args.SetSslTargetNameOverride("Ciena"); //This signifies common name present in X509 certificate
+    args.SetInt(GRPC_ARG_MAX_MESSAGE_LENGTH,channelMaxMsgSize*1024*1024);
     /*update path for client credentias & shared objects */
     get_client_credentials(clientKey, clientCert);
     ssl_opts = {"", client_key, client_cert};
@@ -1682,6 +1654,7 @@ int main(int argc, char** argv) {
 #if defined(GPR_GRPC_REL_0_13_0) || defined(GPR_GRPC_REL_01_0_0) 
             TelemAsyncClient telemAsyncClient(CreateCustomChannel(std::string(hostIpStr), grpc::SslCredentials(ssl_opts), args));
 #endif
+            system(rmRootCertBuff);
             if(rpcType == 1)
                 telemAsyncClient.Run(getReq);
             else
@@ -1721,6 +1694,7 @@ int main(int argc, char** argv) {
             TelemSyncClient telemSyncClient(CreateCustomChannel(std::string(hostIpStr),grpc::SslCredentials(ssl_opts), args));
 #endif
             subsReq.set_allocated_subscribe(subscribe);
+            system(rmRootCertBuff);
             telemSyncClient.Run(1, subsReq);
         }
 #endif        

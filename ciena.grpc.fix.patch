@@ -1,0 +1,25 @@
+*** grpc/src/core/lib/security/transport/handshake.c	Thu Jun 22 03:35:28 2017
+--- grpc/src/core/lib/security/transport/handshake.c	Thu Jun 22 03:35:06 2017
+***************
+*** 44,49 ****
+--- 44,52 ----
+  #include "src/core/lib/security/transport/secure_endpoint.h"
+  #include "src/core/lib/security/transport/tsi_error.h"
+  
++ /*CIENA_START*//*CIENA_END*/
++ extern int64_t timeout_value; //needs to be defined and set by client code
++ 
+  #define GRPC_INITIAL_HANDSHAKE_BUFFER_SIZE 256
+  
+  typedef struct {
+***************
+*** 357,362 ****
+--- 360,367 ----
+      gpr_mu_unlock(&server_connector->mu);
+    }
+    send_handshake_bytes_to_peer(exec_ctx, h);
++   /*CIENA_START*//*CIENA_END*/
++   deadline = gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC), gpr_time_from_seconds(timeout_value, GPR_TIMESPAN));
+    grpc_timer_init(exec_ctx, &h->timer, deadline, on_timeout, h,
+                    gpr_now(deadline.clock_type));
+  }
