@@ -4,6 +4,7 @@ Following steps needs to be followed to buld Ciena gRPC C++ Client for gRPC stac
 
 ```sh
 git clone --recurse-submodules -b v1.0.0  https://github.com/grpc/grpc.git
+git clone https://github.com/ciena/gNMI-cpp-client.git 
 ```
 
 2> You may require to patch a few files of gRPC stack, boringssl for making them compatible to your compiler version.
@@ -21,7 +22,7 @@ git clone --recurse-submodules -b v1.0.0  https://github.com/grpc/grpc.git
    To apply this patch, run the following command
 
 ```sh
-patch -p0 < ciena.grpc.patch
+patch -p0 < gNMI-cpp-client/ciena.grpc.patch
 ```
 
    This will modify the stack to be compatible if needed
@@ -35,6 +36,8 @@ make
 
 4> Build the ciena C++ gNMI client
 ```sh
-cd ../ciena_grpc_client/v1.0.x/cpp
+cd ../
+cp -rf gNMI-cpp-client/ciena_grpc_client/ .
+cd ciena_grpc_client/v1.0.x/cpp/
 make
 ```
