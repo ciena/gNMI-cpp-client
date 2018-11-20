@@ -29,7 +29,7 @@ patch -p0 < ciena.grpc.patch
 3> Build grpc stack
 
 ```sh
-cd grpc
+cd grpcnnnnn
 make
 ```
 
