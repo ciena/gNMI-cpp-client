@@ -1,4 +1,16 @@
+PREREQUISITES
+---------------
+To build gRPC & protobuf from source, the following tools are needed:
+* autoconf
+* automake
+* libtool
+* make
+* g++
+* unzip
+
+
 Following steps needs to be followed to buld Ciena gRPC C++ Client for gRPC stack v1.0.0
+------------------------------------------------------------------------------------------
 
 1> Clone Ciena gNMI C++ client repository from github using command
 ```sh
