@@ -229,7 +229,7 @@ static void downloadCertAndSetEnv(char* hostIpStr, char* portStr, char* httpPort
     
     while(1)
     {
-        sprintf(setSecBuff, "echo -n | openssl s_client -connect %s:%s  &> %s", hostIpStr,httpPortStr, fileBuff2);
+        sprintf(setSecBuff, "echo -n | timeout 10s openssl s_client -connect %s:%s  &> %s", hostIpStr,httpPortStr, fileBuff2);
         system(setSecBuff);
         if(stat(fileBuff2, &file_stats) >=0 )
         {
@@ -1260,8 +1260,10 @@ int main(int argc, char** argv) {
     SubscribeRequest subsReq;
     
     memset(httpPortStr,0,10);
-    strcpy(httpPortStr, "443");
-    
+   /**Changing the default port to 10161 , this will work for all releases/
+   /*strcpy(httpPortStr, "443");*/
+    strcpy(httpPortStr, "10161");
+       
     memset(portStr,0,10);
     strcpy(portStr, STREAM_SERVER_PORT);
 
