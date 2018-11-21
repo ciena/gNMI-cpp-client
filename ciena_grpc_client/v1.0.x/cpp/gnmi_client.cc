@@ -1260,8 +1260,6 @@ int main(int argc, char** argv) {
     SubscribeRequest subsReq;
     
     memset(httpPortStr,0,10);
-   /**Changing the default port to 10161 , this will work for all releases/
-   /*strcpy(httpPortStr, "443");*/
     strcpy(httpPortStr, "10161");
        
     memset(portStr,0,10);
