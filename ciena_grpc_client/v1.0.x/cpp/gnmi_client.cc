@@ -104,9 +104,8 @@ int cmdDelay = 0;
 int64_t timeout_value=10; // in seconds
 
 
-/*Shall we increase the max size for key & cert chain ?*/
-char client_key[1000];
-char client_cert[2000];
+char *client_key;
+char *client_cert;
 
 void  get_client_credentials(char* clientKey, char* clientCert){
 
@@ -123,6 +122,13 @@ void  get_client_credentials(char* clientKey, char* clientCert){
  fseek(fp_key, 0, SEEK_END);
  fsize = ftell(fp_key);
  fseek(fp_key, 0, SEEK_SET);
+ client_key = (char*)malloc(fsize * sizeof(char));
+ if (client_key == NULL)
+ {
+   printf ("Malloc Failed for key\n");
+   fclose(fp_key);
+   return;
+ }
  fread(client_key, fsize, 1, fp_key);
  fclose(fp_key);
  client_key[fsize] = 0;
@@ -131,6 +137,13 @@ void  get_client_credentials(char* clientKey, char* clientCert){
  fseek(fp_cert, 0, SEEK_END);
  fsize = ftell(fp_cert);
  fseek(fp_cert, 0, SEEK_SET);
+ client_cert = (char*)malloc(fsize * sizeof(char));
+ if (client_cert == NULL)
+ {
+   printf("Malloc Failed for cert\n");
+   fclose(fp_cert);
+   return;
+ }
  fread(client_cert, fsize, 1, fp_cert);
  fclose(fp_cert);
  client_cert[fsize] = 0;
