@@ -107,14 +107,14 @@ int64_t timeout_value=10; // in seconds
 char *client_key;
 char *client_cert;
 
-void  get_client_credentials(char* clientKey, char* clientCert){
+int  get_client_credentials(char* clientKey, char* clientCert){
 
  long fsize;
 
  FILE *fp_key  = fopen(clientKey, "rb");
  FILE *fp_cert = fopen(clientCert, "rb");
  if (fp_key == NULL || fp_cert == NULL) {
-    return;
+    return 0;
  }
 
 
@@ -122,31 +122,54 @@ void  get_client_credentials(char* clientKey, char* clientCert){
  fseek(fp_key, 0, SEEK_END);
  fsize = ftell(fp_key);
  fseek(fp_key, 0, SEEK_SET);
- client_key = (char*)malloc(fsize * sizeof(char));
- if (client_key == NULL)
- {
-   printf ("Malloc Failed for key\n");
-   fclose(fp_key);
-   return;
+ if (fsize != -1)
+ {   
+     fseek(fp_key, 0, SEEK_SET);
+     client_key = (char*)malloc(fsize * sizeof(char));
+     if (client_key == NULL)
+     {
+         printf ("Malloc Failed for key\n");
+         fclose(fp_key);
+         return 0;
+      }
+      fread(client_key, fsize, 1, fp_key);
+      fclose(fp_key);
+      client_key[fsize] = 0;
  }
- fread(client_key, fsize, 1, fp_key);
- fclose(fp_key);
- client_key[fsize] = 0;
+ else
+ {
+    printf ("Couldn't calculate file size:ftell failed for key\n");
+    fclose(fp_key);
+    return 0;
+ }
+
 
  /*Read whole cert file */
+ fsize = 0;
  fseek(fp_cert, 0, SEEK_END);
  fsize = ftell(fp_cert);
  fseek(fp_cert, 0, SEEK_SET);
- client_cert = (char*)malloc(fsize * sizeof(char));
- if (client_cert == NULL)
+ if(fsize != -1)
  {
-   printf("Malloc Failed for cert\n");
-   fclose(fp_cert);
-   return;
+     fseek(fp_cert, 0, SEEK_SET);
+     client_cert = (char*)malloc(fsize * sizeof(char));
+     if (client_cert == NULL)
+     {
+         printf("Malloc Failed for cert\n");
+         fclose(fp_cert);
+         return 0;
+     }
+     fread(client_cert, fsize, 1, fp_cert);
+     fclose(fp_cert);
+     client_cert[fsize] = 0;
+     return 1;
  }
- fread(client_cert, fsize, 1, fp_cert);
- fclose(fp_cert);
- client_cert[fsize] = 0;
+ else
+ {
+     printf("Couldn't calculate file size:ftell failed for cert\n");
+     fclose(fp_cert);
+     return 0;
+ }
 
 }
 
@@ -164,7 +187,8 @@ static  void usage( )
     printf (" -w <dcnPort>             : DCN port; which is optional, default DCN port is 10161\n");
     printf (" -h <httpPort>            : httpPort; which is optional, default http port is 443\n");
     printf (" -m <mode>                : 0 => STREAM, 1=> ONCE\n");
-    printf (" -g <sample_interval>     : Multiple of 10 secs\n");    
+    printf (" -g <sample_interval>     : Multiple of 10 secs pre R1285/1510 OR equivalent nanoseconds R1285/1510 onwards\n");
+    printf (" -G <sample_interval>     : Multiple of 10 secs recommended for R1285/1510 onwards\n");
     printf (" -x <prefix>              : Prefix\n");
     printf (" -p <path>                : Path for Sync/Async Get rpc\n");
     printf (" -d <path>                : Delete Path for Async Set request (NOT SUPPORTED)\n");        
@@ -1264,13 +1288,16 @@ int main(int argc, char** argv) {
     char* portPos1 = NULL;
     char* portPos2 = NULL;   
     int   mode = 0;
-    int   sampleInterval = 0;
+    uint64_t   sampleInterval = 0;
     char  rmRootCertBuff[100];
     int   channelMaxMsgSize = 20;
     
     GetRequest       getReq;
     SetRequest       setReq;    
     SubscribeRequest subsReq;
+ 
+    memset(clientKey, 0, 200);
+    memset(clientCert, 0, 200);
     
     memset(httpPortStr,0,10);
     strcpy(httpPortStr, "10161");
@@ -1290,7 +1317,7 @@ int main(int argc, char** argv) {
       cmd_ptr = cmd_ptr + 2;
     }
     
-    while((opt=getopt(argc, argv, "t:sl:i:x:p:d:r:u:c:w:h:m:g:K:C:S:T:")) != -1)
+    while((opt=getopt(argc, argv, "t:sl:i:x:p:d:r:u:c:w:h:m:g:K:C:S:T:G:")) != -1)
     {
         switch(opt) 
         {
@@ -1385,7 +1412,38 @@ int main(int argc, char** argv) {
                     printf("\n\nsample interval must be entered before path !!! \n\n");
                     usage();
                 }
-                sampleInterval = atoi(optarg);
+                    else if(0 != sampleInterval) //already filled by -G option.
+                {
+                    printf("\n\nChoose either -g(Pre R1285/R1510) or -G(R1285/1510 onwards) JA-403953!!! \n\n");
+                    usage();
+                }
+                sampleInterval = atol(optarg);
+                
+                break;             
+ 
+            case 'G':
+                if( !rpcType )
+                {
+                    printf("\n\nrpc type must be entered first !!! \n\n");
+                    usage();
+                }
+                else if( rpcType != 2)
+                {
+                    printf("\n\nOption not valid for rpc type = %d !!! \n\n",rpcType);
+                    usage();
+                }
+                else if(pathPresent)
+                {
+                    printf("\n\nsample interval must be entered before path !!! \n\n");
+                    usage();
+                }
+                else if(0 != sampleInterval) //already filled by -g option.
+                {
+                    printf("\n\nChoose either -g(Pre R1285/R1510) or -G(R1285/1510 onwards) JA-403953!!! \n\n");
+                    usage();
+                }
+                sampleInterval = atol(optarg);
+                sampleInterval = sampleInterval * 1000000000;
                 
                 break;              
                 
@@ -1647,6 +1705,23 @@ int main(int argc, char** argv) {
     /*update path for client credentias & shared objects */
     get_client_credentials(clientKey, clientCert);
     ssl_opts = {"", client_key, client_cert};
+    if (clientKey[0] && clientCert[0])
+    {
+        if ((get_client_credentials(clientKey, clientCert)) && 
+           (client_key != NULL) && (client_cert != NULL))
+        {
+            ssl_opts = {"", client_key, client_cert};
+        }
+        else
+        {
+            printf("Failure in reading cert/key pair\n");
+            return 0;
+        }
+    }
+    else
+    {
+        ssl_opts = {"", "", ""};
+    }
 #endif
 
 
